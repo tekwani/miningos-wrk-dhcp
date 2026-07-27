@@ -17,7 +17,7 @@
     "url": "https://github.com/tetherto/miningos-wrk-dhcp/issues"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "files": [
     "worker.js",
@@ -40,9 +40,9 @@
     "@bitfinex/bfx-facs-http": "git+https://github.com/bitfinexcom/bfx-facs-http",
     "@bitfinex/bfx-svc-boot-js": "1.2.0",
     "@bitfinex/bfx-wrk-base": "git+https://github.com/bitfinexcom/bfx-wrk-base",
-    "@tetherto/svc-facs-dhcp-kea": "git+https://github.com/tetherto/svc-facs-dhcp-kea.git",
     "@tetherto/hp-svc-facs-net": "git+https://github.com/tetherto/hp-svc-facs-net.git#v1.0.0",
-    "@tetherto/hp-svc-facs-store": "git+https://github.com/tetherto/hp-svc-facs-store.git#v1.0.0"
+    "@tetherto/hp-svc-facs-store": "git+https://github.com/tetherto/hp-svc-facs-store.git#v1.0.0",
+    "@tetherto/svc-facs-dhcp-kea": "git+https://github.com/tetherto/svc-facs-dhcp-kea.git"
   },
   "devDependencies": {
     "brittle": "3.16.3",
