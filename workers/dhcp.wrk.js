@@ -1,8 +1,14 @@
 'use strict'
 
+const http = require('http')
 const async = require('async')
 const WrkBase = require('@bitfinex/bfx-wrk-base')
 const debug = require('debug')('dhcp:wrk')
+
+// Kea closes the control-channel TCP socket after each command. Node 19+
+// keep-alive reuse then hits ECONNRESET on the next call (getLeases does
+// config-get then lease4-get-all back-to-back).
+const keaHttpAgent = new http.Agent({ keepAlive: false })
 
 class WrkDHCP extends WrkBase {
   constructor (conf, ctx) {
@@ -66,10 +72,33 @@ class WrkDHCP extends WrkBase {
     return await this.dhcpKea_k0.importLeases(req)
   }
 
+  _disableKeaHttpKeepAlive () {
+    const httpFac = this.http_c0
+    if (!httpFac || typeof httpFac.request !== 'function') return
+
+    const origRequest = httpFac.request.bind(httpFac)
+    httpFac.request = (path, opts = {}, cb = null) => {
+      if (typeof opts === 'function') {
+        cb = opts
+        opts = {}
+      }
+
+      return origRequest(path, {
+        ...opts,
+        agent: opts.agent || keaHttpAgent,
+        headers: {
+          Connection: 'close',
+          ...opts.headers
+        }
+      }, cb)
+    }
+  }
+
   _start (cb) {
     async.series([
       next => { super._start(next) },
       async () => {
+        this._disableKeaHttpKeepAlive()
         await this.net_r0.startRpcServer()
         const rpcServer = this.net_r0.rpcServer
 

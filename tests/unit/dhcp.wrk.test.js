@@ -106,6 +106,30 @@ test('WrkDHCP#init registers store, net, http, and kea facilities', function (t)
   }
 })
 
+test('WrkDHCP#_disableKeaHttpKeepAlive forces Connection: close and no keep-alive', function (t) {
+  const wrk = Object.create(WrkDHCP.prototype)
+  const calls = []
+  wrk.http_c0 = {
+    request (path, opts) {
+      calls.push({ path, opts })
+      return { path, opts }
+    }
+  }
+
+  wrk._disableKeaHttpKeepAlive()
+  wrk.http_c0.request('http://127.0.0.1:8000/', { body: '{}' })
+
+  t.is(calls.length, 1)
+  t.is(calls[0].opts.headers.Connection, 'close')
+  t.is(calls[0].opts.agent.keepAlive, false)
+})
+
+test('WrkDHCP#_disableKeaHttpKeepAlive is a no-op without http_c0', function (t) {
+  const wrk = Object.create(WrkDHCP.prototype)
+  wrk._disableKeaHttpKeepAlive()
+  t.pass()
+})
+
 test('WrkDHCP#_start wires RPC handlers and saves public key', async function (t) {
   const parentProto = Object.getPrototypeOf(WrkDHCP.prototype)
   const origStart = parentProto._start
