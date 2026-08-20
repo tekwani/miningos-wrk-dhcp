@@ -31,36 +31,32 @@ module.exports = function (fastify) {
       }])
     } else if (command === 'lease4-add') {
       const newLease = args
-      console.log('newLease', newLease)
-      const existingLease = request.state.leases.find(lease => lease['hw-address'] === newLease['hw-address'])
-      console.log('existingLease', existingLease)
-      if (existingLease && existingLease['ip-address'] !== newLease['ip-address'] && existingLease['subnet-id'] !== newLease['subnet-id']) {
-        reply.code(400).send([{
-          result: 1,
-          text: 'Lease already exists'
-        }])
-      } else if (!existingLease) {
-        request.state.leases.push(newLease)
-      }
-      reply.code(200).send([{
-        result: 0,
-        text: 'Lease added'
-      }])
-    } else if (command === 'lease4-del') {
-      const lease = args
-      console.log('lease', lease)
-      const existingLease = request.state.leases.find(ilease => ilease['hw-address'] === lease['hw-address'])
-      console.log('existingLease', existingLease)
+      const existingLease = request.state.leases.find(lease => lease['ip-address'] === newLease['ip-address'])
       if (existingLease) {
-        request.state.leases = request.state.leases.filter(ilease => ilease['hw-address'] !== lease['hw-address'])
         reply.code(200).send([{
-          result: 0,
-          text: 'Lease deleted'
+          result: 1,
+          text: 'IPv4 lease already exists.'
         }])
       } else {
-        reply.code(400).send([{
-          result: 1,
-          text: 'Lease does not exist'
+        request.state.leases.push(newLease)
+        reply.code(200).send([{
+          result: 0,
+          text: `Lease for address ${newLease['ip-address']}, subnet-id ${newLease['subnet-id']} added.`
+        }])
+      }
+    } else if (command === 'lease4-del') {
+      const lease = args
+      const existingLease = request.state.leases.find(ilease => ilease['ip-address'] === lease['ip-address'])
+      if (existingLease) {
+        request.state.leases = request.state.leases.filter(ilease => ilease['ip-address'] !== lease['ip-address'])
+        reply.code(200).send([{
+          result: 0,
+          text: 'IPv4 lease deleted.'
+        }])
+      } else {
+        reply.code(200).send([{
+          result: 3,
+          text: 'IPv4 lease not found.'
         }])
       }
     }
