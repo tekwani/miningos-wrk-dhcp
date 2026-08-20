@@ -77,6 +77,8 @@ test('mock Kea: lease4-add then lease4-get-all includes lease', async function (
     }
   })
   t.is(addRes.statusCode, 200)
+  t.is(addRes.json()[0].result, 0)
+  t.is(addRes.json()[0].text, 'Lease for address 10.182.0.20, subnet-id 1 added.')
   const getRes = await app.inject({
     method: 'POST',
     url: '/',
@@ -133,7 +135,7 @@ test('mock Kea: lease4-del removes lease', async function (t) {
   await app.close()
 })
 
-test('mock Kea: invalid service returns 400', async function (t) {
+test('mock Kea: invalid service returns result 1 and stops processing', async function (t) {
   const app = buildApp()
   await app.ready()
   const res = await app.inject({
@@ -141,11 +143,22 @@ test('mock Kea: invalid service returns 400', async function (t) {
     url: '/',
     payload: {
       service: ['not-dhcp4'],
-      command: 'config-get',
+      command: 'lease4-add',
+      arguments: { 'hw-address': 'aa:aa:aa:aa:aa:aa', 'ip-address': '10.182.0.66', 'subnet-id': 1 }
+    }
+  })
+  t.is(res.statusCode, 200)
+  t.is(res.json()[0].result, 1)
+  const getRes = await app.inject({
+    method: 'POST',
+    url: '/',
+    payload: {
+      service: ['dhcp4'],
+      command: 'lease4-get-all',
       arguments: {}
     }
   })
-  t.is(res.statusCode, 400)
+  t.is(getRes.json()[0].arguments.leases.length, 0, 'rejected request does not mutate lease state')
   await app.close()
 })
 
@@ -260,7 +273,7 @@ test('mock Kea: lease4-del removes only the addressed lease of a hw-address', as
     payload: {
       service: ['dhcp4'],
       command: 'lease4-del',
-      arguments: { 'ip-address': '10.182.0.10', 'hw-address': mac }
+      arguments: { 'ip-address': '10.182.0.10' }
     }
   })
   t.is(delRes.json()[0].result, 0)
@@ -296,7 +309,7 @@ test('mock Kea: lease4-del for an unknown ip returns result 3', async function (
   await app.close()
 })
 
-test('mock Kea: invalid command returns 400', async function (t) {
+test('mock Kea: unsupported command returns result 2', async function (t) {
   const app = buildApp()
   await app.ready()
   const res = await app.inject({
@@ -308,6 +321,8 @@ test('mock Kea: invalid command returns 400', async function (t) {
       arguments: {}
     }
   })
-  t.is(res.statusCode, 400)
+  t.is(res.statusCode, 200)
+  t.is(res.json()[0].result, 2)
+  t.is(res.json()[0].text, "'unknown-cmd' command not supported.")
   await app.close()
 })
